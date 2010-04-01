@@ -33,7 +33,7 @@ namespace OpenEngine {
             // FBO attributes
             unsigned int fboID;
             Resources::ITexture2DPtr depthTex;
-            std::list<Resources::ITexture2DPtr> texs;
+            Resources::ITexture2DPtr tex;
             Math::Vector<4, int> viewDim;
             int width, height;
             
@@ -44,7 +44,7 @@ namespace OpenEngine {
 
             inline unsigned int GetFboID() const { return fboID; }
             inline Math::Vector<4, int> GetDimension() const { return viewDim; }
-            inline std::list<Resources::ITexture2DPtr> GetTextures() { return texs; }
+            inline Resources::ITexture2DPtr GetTexture() { return tex; }
 
         };
 
