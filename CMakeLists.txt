@@ -10,6 +10,7 @@ ADD_LIBRARY( ${EXTENSION_NAME}
 
 TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}
   OpenEngine_Renderers
+  OpenEngine_Display
   Extensions_OpenGLRenderer
   ${OPENGL_LIBRARY}
 )
