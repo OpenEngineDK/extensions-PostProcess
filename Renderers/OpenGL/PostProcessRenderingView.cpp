@@ -10,7 +10,12 @@
 #include "PostProcessRenderingView.h"
 
 #include <Scene/PostProcessNode.h>
+#include <Display/OrthogonalViewingVolume.h>
+#include <Resources/IShaderResource.h>
 #include <Logging/Logger.h>
+
+using namespace OpenEngine::Display;
+using namespace OpenEngine::Resources;
 
 namespace OpenEngine {
     namespace Renderers {
@@ -28,17 +33,14 @@ namespace OpenEngine {
                 glViewport(dims[0], dims[1], dims[2], dims[3]);
                 CHECK_FOR_GL_ERROR();
 
-                logger.info << "dims " << dims << logger.end;
-
                 // Save the previous state
                 GLint prevFbo;
                 glGetIntegerv(GL_FRAMEBUFFER_BINDING_EXT, &prevFbo);
-                logger.info << "prevFbo " << prevFbo << logger.end;
                 CHECK_FOR_GL_ERROR();
                 Vector<4, GLint> prevDims;
                 glGetIntegerv(GL_VIEWPORT, prevDims.ToArray());
-                logger.info << "prevDims " << prevDims << logger.end;
                 CHECK_FOR_GL_ERROR();
+                IViewingVolume* prevViewingVolume = renderer->GetViewport().GetViewingVolume();
 
                 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, node->GetFboID());
                 CHECK_FOR_GL_ERROR();
@@ -53,30 +55,40 @@ namespace OpenEngine {
                 glViewport(prevDims[0], prevDims[1], prevDims[2], prevDims[3]);
                 CHECK_FOR_GL_ERROR();
 
+                //node->VisitSubNodes(*this);
 
 
-                node->VisitSubNodes(*this);
+                OrthogonalViewingVolume* ot = new OrthogonalViewingVolume(-1, 1, prevDims[0], prevDims[2], prevDims[1], prevDims[3]);
+                renderer->ApplyViewingVolume(*ot);
+                delete ot;
 
 
+                node->GetEffect()->ApplyShader();
+
+                glEnable(GL_TEXTURE_2D);
                 glBindTexture(GL_TEXTURE_2D, node->GetTexture()->GetID());
 
                 glBegin(GL_QUADS);
                 
-                glTexCoord2f(0,0);
+                glTexCoord2f(0,1);
                 glVertex3f(prevDims[0],prevDims[1],0);
                 
-                glTexCoord2f(0,1);
+                glTexCoord2f(0,0);
                 glVertex3f(prevDims[0],prevDims[3],0);
                 
-                glTexCoord2f(1,1);
+                glTexCoord2f(1,0);
                 glVertex3f(prevDims[2],prevDims[3],0);
                 
-                glTexCoord2f(1,0);
+                glTexCoord2f(1,1);
                 glVertex3f(prevDims[2],prevDims[1],0);
                 
                 glEnd();
 
                 glBindTexture(GL_TEXTURE_2D, 0);
+                
+                node->GetEffect()->ReleaseShader();
+
+                renderer->ApplyViewingVolume(*prevViewingVolume);
                 
             }
             

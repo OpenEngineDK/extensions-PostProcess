@@ -36,15 +36,21 @@ namespace OpenEngine {
             Resources::ITexture2DPtr tex;
             Math::Vector<4, int> viewDim;
             int width, height;
+
+            // Shader for the effect
+            Resources::IShaderResourcePtr effect;
+            bool useDepthBuffer;
             
         public:
-            PostProcessNode(unsigned int colorbuffers = 1);
+            PostProcessNode();
+            PostProcessNode(Resources::IShaderResourcePtr effect, bool useDepthBuffer = false);
 
             void Handle(Renderers::RenderingEventArg arg);
 
             inline unsigned int GetFboID() const { return fboID; }
             inline Math::Vector<4, int> GetDimension() const { return viewDim; }
             inline Resources::ITexture2DPtr GetTexture() { return tex; }
+            inline Resources::IShaderResourcePtr GetEffect() { return effect; }
 
         };
 
