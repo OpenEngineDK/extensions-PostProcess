@@ -1,4 +1,4 @@
-uniform sampler2D color1;
+uniform sampler2D color0;
 /*
 uniform float xsize;    // zoom-size in pixels (fractions are ok (to make zooming smooth))
 uniform float ysize;    // zoom-size in pixels (fractions are ok (to make zooming smooth))
@@ -22,7 +22,7 @@ void main() {
 
     texcoord = vec2(texcoord.x / scrxsizeFloat, texcoord.y / scrysizeFloat);
 
-    vec4 color = texture2D(color1, texcoord);
+    vec4 color = texture2D(color0, texcoord);
 
     gl_FragColor = color;
 }

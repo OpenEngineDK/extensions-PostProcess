@@ -1,4 +1,4 @@
-uniform sampler2D color1;
+uniform sampler2D color0;
 const vec2 screenLightPos = vec2(0.5,0.5);
 
 varying vec2 texCoord;
@@ -6,7 +6,7 @@ varying vec2 texCoord;
 void main() {
 
     //vec2 screenLightPos = vec2(0.5,0.5);
-    float density = 0.6;//0.4;	// længde af raysne 
+    float density = 0.2;//0.4;	// længde af raysne 
     float decay = 0.95;		// hvor hurtigt de decayer
     float exposure = 0.1;
     float weight = 1.0; ///////
@@ -21,7 +21,7 @@ void main() {
     deltaTexCoord *= 1.0 / NUM_SAMPLES * density;
     
     // Store initial sample.
-    vec3 color = texture2D(color1, texcoord).xyz;
+    vec3 color = texture2D(color0, texcoord).xyz;
     
     // Set up illumination decay factor.
     float illuminationDecay = 1.0;
@@ -33,7 +33,7 @@ void main() {
         texcoord -= deltaTexCoord;
         
         // Retrieve sample at new location
-        vec3 sample = texture2D(color1, texcoord).xyz;
+        vec3 sample = texture2D(color0, texcoord).xyz;
         
         // Apply sample atteniation scale/decay factors
         sample *= illuminationDecay * weight;
@@ -50,8 +50,4 @@ void main() {
        
     // Output final color 
     gl_FragColor = vec4(finalColor, 0);
-    
-    // Output final color for debugging (displays where it thinks the lightsource is at)
-    //if (length(gl_TexCoord[0].xy - screenLightPos) < 0.01) gl_FragColor = vec4(1,0,0,0);
-    //else gl_FragColor = vec4(finalColor, 0);
 }

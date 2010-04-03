@@ -14,8 +14,9 @@
 #include <Core/IListener.h>
 #include <Renderers/IRenderer.h>
 #include <Resources/Texture2D.h>
+#include <Resources/FrameBuffer.h>
 #include <Math/Vector.h>
-#include <list>
+#include <vector>
 
 namespace OpenEngine {
     namespace Resources {
@@ -31,25 +32,22 @@ namespace OpenEngine {
 
         protected:
             // FBO attributes
-            unsigned int fboID;
-            Resources::ITexture2DPtr depthTex;
-            Resources::ITexture2DPtr tex;
-            Math::Vector<4, int> viewDim;
-            int width, height;
+            Resources::FrameBuffer* fbo;
 
             // Shader for the effect
             Resources::IShaderResourcePtr effect;
-            bool useDepthBuffer;
+
+            bool merge, blend;
             
         public:
             PostProcessNode();
-            PostProcessNode(Resources::IShaderResourcePtr effect, bool useDepthBuffer = false);
+            PostProcessNode(Resources::IShaderResourcePtr effect);
 
             void Handle(Renderers::RenderingEventArg arg);
 
-            inline unsigned int GetFboID() const { return fboID; }
-            inline Math::Vector<4, int> GetDimension() const { return viewDim; }
-            inline Resources::ITexture2DPtr GetTexture() { return tex; }
+            inline unsigned int GetFboID() const { return fbo->GetID(); }
+            inline Math::Vector<4, int> GetDimension() const { return fbo->GetDimension(); }
+            inline Resources::ITexture2DPtr GetTexture() { return fbo->GetTexAttachement(0); }
             inline Resources::IShaderResourcePtr GetEffect() { return effect; }
 
         };

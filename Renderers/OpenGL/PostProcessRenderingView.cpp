@@ -55,8 +55,6 @@ namespace OpenEngine {
                 glViewport(prevDims[0], prevDims[1], prevDims[2], prevDims[3]);
                 CHECK_FOR_GL_ERROR();
 
-                //node->VisitSubNodes(*this);
-
 
                 OrthogonalViewingVolume* ot = new OrthogonalViewingVolume(-1, 1, prevDims[0], prevDims[2], prevDims[1], prevDims[3]);
                 renderer->ApplyViewingVolume(*ot);
