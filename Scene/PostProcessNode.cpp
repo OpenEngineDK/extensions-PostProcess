@@ -8,11 +8,10 @@
 //--------------------------------------------------------------------
 
 #include <Scene/PostProcessNode.h>
+
 #include <Resources/IShaderResource.h>
 #include <Display/Viewport.h>
-#include <Meta/OpenGL.h>
 #include <Logging/Logger.h>
-#include <Resources/FrameBuffer.h>
 #include <Utils/Convert.h>
 
 using namespace std;
@@ -24,73 +23,99 @@ namespace OpenEngine {
 
         PostProcessNode::PostProcessNode(){
             effect = IShaderResourcePtr();
-            fbo = NULL;            
+            fbos.clear();
+            currentFbo = 0;
+            dimensions = Vector<4, int>(0);
+            time = 0;
+            enabled = false;
         }
 
-        PostProcessNode::PostProcessNode(IShaderResourcePtr effect)
-            : effect(effect) {
+        PostProcessNode::PostProcessNode(Vector<4, int> dims, 
+                                         IShaderResourcePtr effect, 
+                                         bool useDepth, 
+                                         unsigned int colorBuffers,
+                                         unsigned int framebuffers)
+            : effect(effect), 
+              currentFbo(0),
+              dimensions(dims), 
+              useDepthTexture(useDepth), 
+              colorBuffers(colorBuffers),
+              time(0),
+              enabled(true) {
+            for (unsigned int i = 0; i < framebuffers; ++i)
+                fbos.push_back(new FrameBuffer(dims, colorBuffers, useDepthTexture));
+        }
+
+        PostProcessNode::~PostProcessNode(){
+            for (unsigned int i = 0; i < fbos.size(); ++i)
+                delete fbos[i];
         }
 
         void PostProcessNode::Handle(Renderers::RenderingEventArg arg){
-            effect->Load();
+            switch(arg.renderer.GetCurrentStage()){
+            case Renderers::IRenderer::RENDERER_INITIALIZE:
+                {
+                    effect->Load();
+                    
+                    for (unsigned int i = 0; i < fbos.size(); ++i)
+                        arg.renderer.BindFrameBuffer(fbos[i]);
+                    
+                    // Setup shader texture uniforms
+                    for (unsigned int i = 0; i < fbos.size(); ++i){
+                        FrameBuffer* fbo = fbos[i];
 
-            bool useDepthBuffer = effect->GetUniformID("depth") >= 0;
+                        ITexture2DPtr depthTex = fbo->GetDepthTexture();
+                        // check for shorthand form for the first fbo.
+                        if (i == 0){
+                            if (effect->GetUniformID("depth") >= 0 && depthTex != NULL)
+                                effect->SetTexture("depth", depthTex);
+                            
+                            for (unsigned int j = 0; j < fbo->GetNumberOfAttachments(); ++j){
+                                string colorid = "color" + Utils::Convert::ToString<unsigned int>(j);
+                                if (effect->GetUniformID(colorid) >= 0)
+                                    effect->SetTexture(colorid, fbo->GetTexAttachement(j));
+                            }
+                        }
+                        
+                        string si = Utils::Convert::ToString<unsigned int>(i);
 
-            unsigned int colorBuffers = 0;
-            string name = "color"  + Convert::ToString<unsigned int>(colorBuffers);
-            while (effect->GetUniformID(name) >= 0){
-                ++colorBuffers;
-                name = "color"  + Convert::ToString<unsigned int>(colorBuffers);
-            }
-
-            fbo = new FrameBuffer(arg.renderer.GetViewport(), colorBuffers, useDepthBuffer);
-
-            // Setup framebuffer
-            GLuint fboID;
-            glGenFramebuffersEXT(1, &fboID);
-            CHECK_FOR_GL_ERROR();
-            fbo->SetID(fboID);
-            glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboID);
-            CHECK_FOR_GL_ERROR();
-            
-            if (fbo->GetDepthTexture() != NULL){
-                arg.renderer.LoadTexture(fbo->GetDepthTexture());
-                glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, 
-                                          GL_DEPTH_ATTACHMENT_EXT,
-                                          GL_TEXTURE_2D, fbo->GetDepthTexture()->GetID(), 0);
-            }else{
-                Vector<4, int> viewDim = fbo->GetDimension();
-                unsigned int width = viewDim[2] - viewDim[0];
-                unsigned int height = viewDim[3] - viewDim[1];
-
-                GLuint depth;
-                glGenRenderbuffersEXT(1, &depth);
-                glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, depth);
-                glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, width, height);
-                glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+                        if (effect->GetUniformID("fb" + si + "depth") >= 0 && depthTex != NULL)
+                            effect->SetTexture("fb" + si + "depth", depthTex);
+                        
+                        for (unsigned int j = 0; j < fbo->GetNumberOfAttachments(); ++j){
+                            string colorid = "fb" + si + "color" + Utils::Convert::ToString<unsigned int>(j);
+                            if (effect->GetUniformID(colorid) >= 0)
+                                effect->SetTexture(colorid, fbo->GetTexAttachement(j));
+                        }
+                    }
                 
-                glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,
-                                             GL_RENDERBUFFER_EXT, depth);
-            }
+                    if (effect->GetUniformID("time") >= 0){
+                        effect->SetUniform("time", (float)time);
+                        arg.renderer.ProcessEvent().Attach(*this);
+                    }
+                    
+                    // Initialize post process specific code
+                    Initialize(arg);
 
-            for (unsigned int i = 0; i < fbo->GetNumberOfAttachments(); ++i){
-                ITexture2DPtr tex = fbo->GetTexAttachement(i);
-                arg.renderer.LoadTexture(tex.get());
-                
-                glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, 
-                                          GL_COLOR_ATTACHMENT0_EXT,
-                                          GL_TEXTURE_2D, tex->GetID(), 0);
-                CHECK_FOR_GL_ERROR();
-            }
-
-            glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-
-            if (useDepthBuffer)
-                effect->SetTexture("depth", fbo->GetDepthTexture());
-            for (unsigned int i = 0; i < fbo->GetNumberOfAttachments(); ++i){
-                effect->SetTexture("color" + Convert::ToString<unsigned int>(i), fbo->GetTexAttachement(i));
+                    break;
+                }
+            case Renderers::IRenderer::RENDERER_PROCESS:
+                time += arg.approx / 1000.0f;
+                effect->SetUniform("time", (float)time);
+                break;
+            default:
+                ;
             }
         }
+
+        void PostProcessNode::Initialize(RenderingEventArg arg){
+
+        }
+
+        void PostProcessNode::PreEffect(IRenderer& renderer, Matrix<4,4,float> modelview){
+
+        }
+
 
     }
 }

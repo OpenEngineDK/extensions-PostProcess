@@ -24,7 +24,6 @@ using namespace OpenEngine::Renderers;
      PostProcessRenderingView(Viewport& viewport);
      
      void VisitPostProcessNode(PostProcessNode* node);
-
  };
 
 }

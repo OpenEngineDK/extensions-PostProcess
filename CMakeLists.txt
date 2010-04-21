@@ -2,7 +2,6 @@ SET ( EXTENSION_NAME "Extensions_PostProcess")
 
 # Create the extension library
 ADD_LIBRARY( ${EXTENSION_NAME}
-  Resources/FrameBuffer.h
   Scene/PostProcessNode.h
   Scene/PostProcessNode.cpp
   Renderers/OpenGL/PostProcessRenderingView.h
