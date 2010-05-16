@@ -25,26 +25,47 @@ namespace OpenEngine {
             effect = IShaderResourcePtr();
             fbos.clear();
             currentFbo = 0;
-            dimensions = Vector<4, int>(0);
+            dimensions = Vector<2, int>(0);
             time = 0;
             enabled = false;
+            effectFb = NULL;
+            finalFb = NULL;
+
         }
 
-        PostProcessNode::PostProcessNode(Vector<4, int> dims, 
-                                         IShaderResourcePtr effect, 
+        PostProcessNode::PostProcessNode(IShaderResourcePtr effect, 
+                                         Vector<2, int> dims, 
                                          bool useDepth, 
                                          unsigned int colorBuffers,
                                          unsigned int framebuffers)
             : effect(effect), 
               currentFbo(0),
               dimensions(dims), 
-              useDepthTexture(useDepth), 
-              colorBuffers(colorBuffers),
               time(0),
-              enabled(true) {
+              enabled(true),
+              finalFb(NULL){
             for (unsigned int i = 0; i < framebuffers; ++i)
-                fbos.push_back(new FrameBuffer(dims, colorBuffers, useDepthTexture));
+                fbos.push_back(new FrameBuffer(dims, colorBuffers, useDepth));
+            
+            effectFb = new FrameBuffer(dims, colorBuffers, useDepth);
         }
+
+        PostProcessNode::PostProcessNode(Resources::IShaderResourcePtr effect, 
+                                         Resources::FrameBuffer* prototype,
+                                         unsigned int framebuffers)
+            : effect(effect),
+              currentFbo(0), 
+              dimensions(prototype->GetDimension()),
+              time(0),
+              enabled(true),
+              effectFb(NULL),
+              finalFb(NULL){
+            for (unsigned int i = 0; i < framebuffers; ++i)
+                fbos.push_back(prototype->Clone());
+
+            effectFb = prototype->Clone();
+        }
+
 
         PostProcessNode::~PostProcessNode(){
             for (unsigned int i = 0; i < fbos.size(); ++i)
@@ -55,11 +76,11 @@ namespace OpenEngine {
             switch(arg.renderer.GetCurrentStage()){
             case Renderers::IRenderer::RENDERER_INITIALIZE:
                 {
-                    effect->Load();
-                    
+                    arg.renderer.BindFrameBuffer(effectFb);
                     for (unsigned int i = 0; i < fbos.size(); ++i)
                         arg.renderer.BindFrameBuffer(fbos[i]);
                     
+                    effect->Load();
                     // Setup shader texture uniforms
                     for (unsigned int i = 0; i < fbos.size(); ++i){
                         FrameBuffer* fbo = fbos[i];
@@ -116,6 +137,15 @@ namespace OpenEngine {
 
         }
 
+        void PostProcessNode::NextFrameBuffer() {
+            currentFbo++; 
+            currentFbo %= fbos.size();
+
+            // switch color buffers instead, requires a
+            // FrameBufferColorBufferChangedEvenArg (maybe with a
+            // shorter name though)
+
+        }
 
     }
 }

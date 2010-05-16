@@ -6,8 +6,6 @@ ADD_LIBRARY( ${EXTENSION_NAME}
   Scene/PostProcessNode.cpp
   Renderers/OpenGL/PostProcessRenderingView.h
   Renderers/OpenGL/PostProcessRenderingView.cpp
-  PostProcess/IPostProcessEffect.h
-  PostProcess/IPostProcessEffect.cpp
 )
 
 TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}

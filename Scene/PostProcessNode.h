@@ -38,25 +38,36 @@ namespace OpenEngine {
             // FBO attributes
             vector<Resources::FrameBuffer*> fbos;
             unsigned int currentFbo;
-            Vector<4, int> dimensions;
-            bool useDepthTexture;
-            unsigned int colorBuffers;
-
-            bool merge;
+            Vector<2, int> dimensions;
 
             unsigned int time;
 
         public:
             // Public variables
             bool enabled;
+            bool offscreenRendering;
+            Resources::FrameBuffer* effectFb;
+            Resources::FrameBuffer* finalFb;
             
+            bool merge;
+
         public:
             PostProcessNode();
-            PostProcessNode(Math::Vector<4, int> dims, 
-                            Resources::IShaderResourcePtr effect, 
+            PostProcessNode(Resources::IShaderResourcePtr effect, 
+                            Math::Vector<2, int> dims, 
                             bool useDepth = true, 
                             unsigned int colorBuffers = 1,
                             unsigned int framebuffers = 1);
+            /**
+             * Post process node constructor.
+             *
+             * Clones the framebuffer options secified in prototype
+             * and uses them in all the framebuffers.
+             */
+            PostProcessNode(Resources::IShaderResourcePtr effect, 
+                            Resources::FrameBuffer* prototype,
+                            unsigned int framebuffers = 1);
+
             ~PostProcessNode();
 
             void Handle(Renderers::RenderingEventArg arg);
@@ -74,12 +85,12 @@ namespace OpenEngine {
              */
             virtual void PreEffect(Renderers::IRenderer& renderer, Math::Matrix<4,4,float> modelview);
 
-            inline void NextFrameBuffer() { currentFbo++; currentFbo %= fbos.size(); }
+            void NextFrameBuffer();
 
             inline unsigned int CurrentFrameBuffer() const { return currentFbo; }
             inline Resources::FrameBuffer* GetCurrentFrameBuffer() const { return fbos[currentFbo]; }
             inline vector<Resources::FrameBuffer*> GetFrameBuffers() const { return fbos; }
-            inline Math::Vector<4, int> GetDimension() const { return dimensions; }
+            inline Math::Vector<2, int> GetDimension() const { return dimensions; }
             inline Resources::ITexture2DPtr GetTexture(unsigned int buffer, unsigned int framebuffer = 0) { return fbos[framebuffer]->GetTexAttachement(buffer); }
             inline Resources::IShaderResourcePtr GetEffect() { return effect; }
 

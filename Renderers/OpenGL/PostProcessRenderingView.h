@@ -19,10 +19,15 @@ namespace OpenGL {
 using namespace OpenEngine::Renderers;
     
  class PostProcessRenderingView : public RenderingView {
+ protected:
+     GLuint copyShader;
+     GLuint mergeShader;
 
  public:
-     PostProcessRenderingView(Viewport& viewport);
+     PostProcessRenderingView();
      
+     virtual void Handle(RenderingEventArg arg);
+
      void VisitPostProcessNode(PostProcessNode* node);
  };
 
