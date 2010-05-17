@@ -94,12 +94,14 @@ namespace OpenEngine {
                 // the shaders textures \o/
                 
                 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, node->GetEffectFrameBuffer()->GetID());
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glDisable(GL_DEPTH_TEST);
                 CHECK_FOR_GL_ERROR();
                 
                 node->GetEffect()->ApplyShader();
                 glRecti(-1,-1,1,1);
                 node->GetEffect()->ReleaseShader();
+
+                glEnable(GL_DEPTH_TEST);
 
                 // Copy the final image to the final textures
                 if (node->GetFinalTexs().size() != 0){
