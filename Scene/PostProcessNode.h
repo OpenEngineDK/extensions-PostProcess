@@ -36,8 +36,9 @@ namespace OpenEngine {
             Resources::IShaderResourcePtr effect;
 
             // FBO attributes
-            vector<Resources::FrameBuffer*> fbos;
-            unsigned int currentFbo;
+            //vector<Resources::FrameBuffer*> fbos;
+            //unsigned int currentFbo;
+            Resources::FrameBuffer* fbo;
             Vector<2, int> dimensions;
 
             unsigned int time;
@@ -87,13 +88,14 @@ namespace OpenEngine {
 
             void NextFrameBuffer();
 
-            inline unsigned int CurrentFrameBuffer() const { return currentFbo; }
-            inline Resources::FrameBuffer* GetCurrentFrameBuffer() const { return fbos[currentFbo]; }
-            inline vector<Resources::FrameBuffer*> GetFrameBuffers() const { return fbos; }
+            //inline unsigned int CurrentFrameBuffer() const { return currentFbo; }
+            //inline Resources::FrameBuffer* GetCurrentFrameBuffer() const { return fbos[currentFbo]; }
+            inline Resources::FrameBuffer* GetFrameBuffer() const { return fbo; }
+            //inline vector<Resources::FrameBuffer*> GetFrameBuffers() const { return fbos; }
             inline Math::Vector<2, int> GetDimension() const { return dimensions; }
-            inline Resources::ITexture2DPtr GetTexture(unsigned int buffer, unsigned int framebuffer = 0) { return fbos[framebuffer]->GetTexAttachement(buffer); }
+            //inline Resources::ITexture2DPtr GetTexture(unsigned int buffer, unsigned int framebuffer = 0) { return fbos[framebuffer]->GetTexAttachement(buffer); }
+            inline Resources::ITexture2DPtr GetTexture(unsigned int buffer) { return fbo->GetTexAttachement(buffer); }
             inline Resources::IShaderResourcePtr GetEffect() { return effect; }
-
         };
 
     }
