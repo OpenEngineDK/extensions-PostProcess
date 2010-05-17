@@ -36,10 +36,10 @@ namespace OpenEngine {
             Resources::IShaderResourcePtr effect;
 
             // FBO attributes
-            //vector<Resources::FrameBuffer*> fbos;
-            //unsigned int currentFbo;
-            Resources::FrameBuffer* fbo;
             Vector<2, int> dimensions;
+            Resources::FrameBuffer* fbo;
+            Resources::FrameBuffer* effectFb;
+            vector<ITexture2DPtr> finalTexs;
 
             unsigned int time;
 
@@ -47,8 +47,6 @@ namespace OpenEngine {
             // Public variables
             bool enabled;
             bool offscreenRendering;
-            Resources::FrameBuffer* effectFb;
-            Resources::FrameBuffer* finalFb;
             
             bool merge;
 
@@ -56,9 +54,8 @@ namespace OpenEngine {
             PostProcessNode();
             PostProcessNode(Resources::IShaderResourcePtr effect, 
                             Math::Vector<2, int> dims, 
-                            bool useDepth = true, 
                             unsigned int colorBuffers = 1,
-                            unsigned int framebuffers = 1);
+                            bool useDepth = true);
             /**
              * Post process node constructor.
              *
@@ -66,8 +63,7 @@ namespace OpenEngine {
              * and uses them in all the framebuffers.
              */
             PostProcessNode(Resources::IShaderResourcePtr effect, 
-                            Resources::FrameBuffer* prototype,
-                            unsigned int framebuffers = 1);
+                            Resources::FrameBuffer* prototype);
 
             ~PostProcessNode();
 
@@ -86,15 +82,10 @@ namespace OpenEngine {
              */
             virtual void PreEffect(Renderers::IRenderer& renderer, Math::Matrix<4,4,float> modelview);
 
-            void NextFrameBuffer();
-
-            //inline unsigned int CurrentFrameBuffer() const { return currentFbo; }
-            //inline Resources::FrameBuffer* GetCurrentFrameBuffer() const { return fbos[currentFbo]; }
             inline Resources::FrameBuffer* GetFrameBuffer() const { return fbo; }
-            //inline vector<Resources::FrameBuffer*> GetFrameBuffers() const { return fbos; }
+            inline Resources::FrameBuffer* GetEffectFrameBuffer() const { return effectFb; }
             inline Math::Vector<2, int> GetDimension() const { return dimensions; }
-            //inline Resources::ITexture2DPtr GetTexture(unsigned int buffer, unsigned int framebuffer = 0) { return fbos[framebuffer]->GetTexAttachement(buffer); }
-            inline Resources::ITexture2DPtr GetTexture(unsigned int buffer) { return fbo->GetTexAttachement(buffer); }
+            inline Resources::ITexture2DPtr GetTexture(unsigned int buffer) { return fbo->GetTexAttachment(buffer); }
             inline Resources::IShaderResourcePtr GetEffect() { return effect; }
         };
 

@@ -23,56 +23,50 @@ namespace OpenEngine {
 
         PostProcessNode::PostProcessNode(){
             effect = IShaderResourcePtr();
-            //fbos.clear();
             fbo = NULL;
-            //currentFbo = 0;
             dimensions = Vector<2, int>(0);
             time = 0;
             enabled = false;
             effectFb = NULL;
-            finalFb = NULL;
-
+            finalTexs.clear();
         }
 
         PostProcessNode::PostProcessNode(IShaderResourcePtr effect, 
                                          Vector<2, int> dims, 
-                                         bool useDepth, 
                                          unsigned int colorBuffers,
-                                         unsigned int framebuffers)
+                                         bool useDepth)
             : effect(effect), 
-              //currentFbo(0),
               dimensions(dims), 
               time(0),
-              enabled(true),
-              finalFb(NULL){
-            //for (unsigned int i = 0; i < framebuffers; ++i)
-            //fbos.push_back(new FrameBuffer(dims, colorBuffers, useDepth));
+              enabled(true) {
             fbo = new FrameBuffer(dims, colorBuffers, useDepth);
             
             effectFb = new FrameBuffer(dims, colorBuffers, useDepth);
+
+            finalTexs.clear();
+            for (unsigned int i = 0; i < effectFb->GetNumberOfAttachments(); ++i)
+                finalTexs.push_back(ITexture2DPtr(effectFb->GetTexAttachment(i)->Clone()));
         }
 
         PostProcessNode::PostProcessNode(Resources::IShaderResourcePtr effect, 
-                                         Resources::FrameBuffer* prototype,
-                                         unsigned int framebuffers)
+                                         Resources::FrameBuffer* prototype)
             : effect(effect),
-              //currentFbo(0), 
               dimensions(prototype->GetDimension()),
               time(0),
-              enabled(true),
-              effectFb(NULL),
-              finalFb(NULL){
-            //for (unsigned int i = 0; i < framebuffers; ++i)
-            //fbos.push_back(prototype->Clone());
+              enabled(true){
             fbo = prototype->Clone();
 
             effectFb = prototype->Clone();
+
+            finalTexs.clear();
+            for (unsigned int i = 0; i < effectFb->GetNumberOfAttachments(); ++i)
+                finalTexs.push_back(ITexture2DPtr(effectFb->GetTexAttachment(i)->Clone()));
         }
 
 
         PostProcessNode::~PostProcessNode(){
-            //for (unsigned int i = 0; i < fbos.size(); ++i)
-            //delete fbos[i];
+            delete fbo;
+            delete effectFb;
         }
 
         void PostProcessNode::Handle(Renderers::RenderingEventArg arg){
@@ -81,8 +75,6 @@ namespace OpenEngine {
                 {
                     arg.renderer.BindFrameBuffer(effectFb);
                     arg.renderer.BindFrameBuffer(fbo);
-                    //for (unsigned int i = 0; i < fbos.size(); ++i)
-                    //arg.renderer.BindFrameBuffer(fbos[i]);
                     
                     effect->Load();
                     // Setup shader texture uniforms
@@ -99,7 +91,7 @@ namespace OpenEngine {
                             for (unsigned int j = 0; j < fbo->GetNumberOfAttachments(); ++j){
                                 string colorid = "color" + Utils::Convert::ToString<unsigned int>(j);
                                 if (effect->GetUniformID(colorid) >= 0)
-                                    effect->SetTexture(colorid, fbo->GetTexAttachement(j));
+                                    effect->SetTexture(colorid, fbo->GetTexAttachment(j));
                             }
                         }
                         
@@ -111,7 +103,7 @@ namespace OpenEngine {
                         for (unsigned int j = 0; j < fbo->GetNumberOfAttachments(); ++j){
                             string colorid = "fb" + si + "color" + Utils::Convert::ToString<unsigned int>(j);
                             if (effect->GetUniformID(colorid) >= 0)
-                                effect->SetTexture(colorid, fbo->GetTexAttachement(j));
+                                effect->SetTexture(colorid, fbo->GetTexAttachment(j));
                         }
                     }
                 
@@ -139,16 +131,6 @@ namespace OpenEngine {
         }
 
         void PostProcessNode::PreEffect(IRenderer& renderer, Matrix<4,4,float> modelview){
-
-        }
-
-        void PostProcessNode::NextFrameBuffer() {
-            //currentFbo++; 
-            //currentFbo %= fbos.size();
-
-            // switch color buffers instead, requires a
-            // FrameBufferColorBufferChangedEvenArg (maybe with a
-            // shorter name though)
 
         }
 

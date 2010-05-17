@@ -31,7 +31,6 @@ namespace OpenEngine {
                     logger.info << "init renderingview" << logger.end;
                     
                     copyShader = glCreateProgram();
-                    mergeShader = glCreateProgram();
                     
                     // Create and compile the vertex program
                     GLuint vertexID = glCreateShader(GL_VERTEX_SHADER);
@@ -40,7 +39,6 @@ namespace OpenEngine {
                     glShaderSource(vertexID, 1, vertexSource, NULL);
                     glCompileShader(vertexID);
                     glAttachShader(copyShader, vertexID);
-                    glAttachShader(mergeShader, vertexID);
                     
                     // Create and compile the copy fragment program
                     GLuint fragID = glCreateShader(GL_FRAGMENT_SHADER);
@@ -95,7 +93,7 @@ namespace OpenEngine {
                 // framebuffer?  Or instead have the ppnode redirect
                 // the shaders textures \o/
                 
-                glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, node->effectFb->GetID());
+                glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, node->GetEffectFrameBuffer()->GetID());
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 CHECK_FOR_GL_ERROR();
                 
@@ -106,22 +104,21 @@ namespace OpenEngine {
                 // @TODO
                 // Copy the final image to the final textures
                 
-                // Draw the picture onto the original framebuffer.
+                
+                // copy the picture onto the original framebuffer.
                 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, prevFbo);
                 glViewport(prevDims[0], prevDims[1], prevDims[2], prevDims[3]);
                 CHECK_FOR_GL_ERROR();
 
-                glUseProgram(copyShader);
-                glBindTexture(GL_TEXTURE_2D, node->effectFb->GetTexAttachement(0)->GetID());
-                glRecti(-1,-1,1,1);
-                glUseProgram(0);
-                CHECK_FOR_GL_ERROR();
+                if (!(node->offscreenRendering)){
+                    glUseProgram(copyShader);
+                    glBindTexture(GL_TEXTURE_2D, node->GetEffectFrameBuffer()->GetTexAttachment(0)->GetID());
+                    glRecti(-1,-1,1,1);
+                    glUseProgram(0);
+                    CHECK_FOR_GL_ERROR();
+                }
+
                 glBindTexture(GL_TEXTURE_2D, 0);
-
-                // @TODO instead of switching framebuffers, then
-                // switch the texture ids in the framebuffers.
-                //node->NextFrameBuffer();
-
             }
             
         }
