@@ -101,10 +101,19 @@ namespace OpenEngine {
                 glRecti(-1,-1,1,1);
                 node->GetEffect()->ReleaseShader();
 
-                // @TODO
                 // Copy the final image to the final textures
-                
-                
+                if (node->GetFinalTexs().size() != 0){
+                    for (unsigned int i = 0; i < node->GetFinalTexs().size(); ++i){
+                        glReadBuffer(GL_COLOR_ATTACHMENT0 + i);
+                        glBindTexture(GL_TEXTURE_2D, node->GetFinalTexs()[i]->GetID());
+                        GLsizei width = node->GetFinalTexs()[i]->GetWidth();
+                        GLsizei height = node->GetFinalTexs()[i]->GetHeight();
+                        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
+                    }
+                    glReadBuffer(GL_COLOR_ATTACHMENT0);
+                    CHECK_FOR_GL_ERROR();
+                }
+
                 // copy the picture onto the original framebuffer.
                 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, prevFbo);
                 glViewport(prevDims[0], prevDims[1], prevDims[2], prevDims[3]);

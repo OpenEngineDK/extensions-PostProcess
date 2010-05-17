@@ -87,6 +87,7 @@ namespace OpenEngine {
             inline Math::Vector<2, int> GetDimension() const { return dimensions; }
             inline Resources::ITexture2DPtr GetTexture(unsigned int buffer) { return fbo->GetTexAttachment(buffer); }
             inline Resources::IShaderResourcePtr GetEffect() { return effect; }
+            inline vector<ITexture2DPtr> GetFinalTexs() const { return finalTexs; }
         };
 
     }

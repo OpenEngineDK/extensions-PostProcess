@@ -75,6 +75,8 @@ namespace OpenEngine {
                 {
                     arg.renderer.BindFrameBuffer(effectFb);
                     arg.renderer.BindFrameBuffer(fbo);
+                    for (unsigned int i = 0; i < finalTexs.size(); ++i)
+                        arg.renderer.LoadTexture(finalTexs[i]);
                     
                     effect->Load();
                     // Setup shader texture uniforms
