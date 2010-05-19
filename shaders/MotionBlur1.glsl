@@ -1,2 +1,2 @@
-vert: extensions/PostProcess/Data/default.glsl.vert
-frag: extensions/PostProcess/Data/MotionBlur1.frag
+vert: extensions/PostProcess/shaders/default.glsl.vert
+frag: extensions/PostProcess/shaders/MotionBlur1.frag

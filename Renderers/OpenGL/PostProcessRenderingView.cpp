@@ -80,7 +80,7 @@ namespace OpenEngine {
                 CHECK_FOR_GL_ERROR();
 
                 // Use the new framebuffer
-                glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, node->GetFrameBuffer()->GetID());
+                glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, node->GetSceneFrameBuffer()->GetID());
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 CHECK_FOR_GL_ERROR();
                 
@@ -88,11 +88,6 @@ namespace OpenEngine {
 
                 node->PreEffect(arg->renderer, modelViewMatrix[mvIndex]);
 
-                // @TODO should the not initialized framebuffers be
-                // initialized with the data from the current
-                // framebuffer?  Or instead have the ppnode redirect
-                // the shaders textures \o/
-                
                 glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, node->GetEffectFrameBuffer()->GetID());
                 glDisable(GL_DEPTH_TEST);
                 CHECK_FOR_GL_ERROR();
@@ -105,6 +100,18 @@ namespace OpenEngine {
 
                 // Copy the final image to the final textures
                 if (node->GetFinalTexs().size() != 0){
+                    if (node->GetFinalTexs()[0]->GetID() == 0){
+                        // Initialize the final texs and setup the
+                        // effect shader to use them.
+                        for (unsigned int i = 0; i < node->GetFinalTexs().size(); ++i){
+                            ITexture2DPtr tex = node->GetFinalTexs()[i];
+                            arg->renderer.LoadTexture(tex);
+                            string colorid = "finalColor" + Utils::Convert::ToString<unsigned int>(i);
+                            if (node->GetEffect()->GetUniformID(colorid) >= 0)
+                                node->GetEffect()->SetTexture(colorid, tex);
+                            CHECK_FOR_GL_ERROR();
+                        }
+                    }
                     for (unsigned int i = 0; i < node->GetFinalTexs().size(); ++i){
                         glReadBuffer(GL_COLOR_ATTACHMENT0 + i);
                         glBindTexture(GL_TEXTURE_2D, node->GetFinalTexs()[i]->GetID());
@@ -125,9 +132,9 @@ namespace OpenEngine {
                     glUseProgram(copyShader);
                     glBindTexture(GL_TEXTURE_2D, node->GetEffectFrameBuffer()->GetTexAttachment(0)->GetID());
                     glRecti(-1,-1,1,1);
-                    glUseProgram(0);
                     CHECK_FOR_GL_ERROR();
                 }
+                glUseProgram(0);
 
                 glBindTexture(GL_TEXTURE_2D, 0);
             }

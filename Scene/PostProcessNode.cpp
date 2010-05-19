@@ -23,11 +23,11 @@ namespace OpenEngine {
 
         PostProcessNode::PostProcessNode(){
             effect = IShaderResourcePtr();
-            fbo = NULL;
+            sceneFrameBuffer = NULL;
             dimensions = Vector<2, int>(0);
             time = 0;
             enabled = false;
-            effectFb = NULL;
+            effectFrameBuffer = NULL;
             finalTexs.clear();
         }
 
@@ -39,74 +39,70 @@ namespace OpenEngine {
               dimensions(dims), 
               time(0),
               enabled(true) {
-            fbo = new FrameBuffer(dims, colorBuffers, useDepth);
+            sceneFrameBuffer = new FrameBuffer(dims, colorBuffers, useDepth);
             
-            effectFb = new FrameBuffer(dims, colorBuffers, useDepth);
+            effectFrameBuffer = new FrameBuffer(dims, colorBuffers, useDepth);
 
             finalTexs.clear();
-            for (unsigned int i = 0; i < effectFb->GetNumberOfAttachments(); ++i)
-                finalTexs.push_back(ITexture2DPtr(effectFb->GetTexAttachment(i)->Clone()));
         }
 
         PostProcessNode::PostProcessNode(Resources::IShaderResourcePtr effect, 
-                                         Resources::FrameBuffer* prototype)
+                                         Resources::FrameBuffer* sceneFrameBuffer,
+                                         Resources::FrameBuffer* effectFrameBuffer)
             : effect(effect),
-              dimensions(prototype->GetDimension()),
+              dimensions(sceneFrameBuffer->GetDimension()),
               time(0),
               enabled(true){
-            fbo = prototype->Clone();
+            this->sceneFrameBuffer = sceneFrameBuffer;
 
-            effectFb = prototype->Clone();
+            if (effectFrameBuffer)
+                this->effectFrameBuffer = effectFrameBuffer;
+            else
+                this->effectFrameBuffer = sceneFrameBuffer->Clone();
 
             finalTexs.clear();
-            for (unsigned int i = 0; i < effectFb->GetNumberOfAttachments(); ++i)
-                finalTexs.push_back(ITexture2DPtr(effectFb->GetTexAttachment(i)->Clone()));
         }
 
 
         PostProcessNode::~PostProcessNode(){
-            delete fbo;
-            delete effectFb;
+            delete sceneFrameBuffer;
+            delete effectFrameBuffer;
         }
 
         void PostProcessNode::Handle(Renderers::RenderingEventArg arg){
             switch(arg.renderer.GetCurrentStage()){
             case Renderers::IRenderer::RENDERER_INITIALIZE:
                 {
-                    arg.renderer.BindFrameBuffer(effectFb);
-                    arg.renderer.BindFrameBuffer(fbo);
-                    for (unsigned int i = 0; i < finalTexs.size(); ++i)
-                        arg.renderer.LoadTexture(finalTexs[i]);
+                    arg.renderer.BindFrameBuffer(effectFrameBuffer);
+                    arg.renderer.BindFrameBuffer(sceneFrameBuffer);
                     
                     effect->Load();
+
                     // Setup shader texture uniforms
-                    //for (unsigned int i = 0; i < fbos.size(); ++i){
-                    for (unsigned int i = 0; i < 1; ++i){
-                        //FrameBuffer* fbo = fbos[i];
+                    ITexture2DPtr depthTex = sceneFrameBuffer->GetDepthTexture();
+                    if (effect->GetUniformID("depth") >= 0 && depthTex != NULL)
+                        effect->SetTexture("depth", depthTex);
+                    
+                    for (unsigned int j = 0; j < sceneFrameBuffer->GetNumberOfAttachments(); ++j){
+                        string colorid = "color" + Utils::Convert::ToString<unsigned int>(j);
+                        if (effect->GetUniformID(colorid) >= 0)
+                            effect->SetTexture(colorid, sceneFrameBuffer->GetTexAttachment(j));
+                    }
 
-                        ITexture2DPtr depthTex = fbo->GetDepthTexture();
-                        // check for shorthand form for the first fbo.
-                        if (i == 0){
-                            if (effect->GetUniformID("depth") >= 0 && depthTex != NULL)
-                                effect->SetTexture("depth", depthTex);
-                            
-                            for (unsigned int j = 0; j < fbo->GetNumberOfAttachments(); ++j){
-                                string colorid = "color" + Utils::Convert::ToString<unsigned int>(j);
-                                if (effect->GetUniformID(colorid) >= 0)
-                                    effect->SetTexture(colorid, fbo->GetTexAttachment(j));
-                            }
+                    // Setup final texture dependencies
+                    // The final texture is undefined in the first
+                    // pass, so link to original non effect texture
+                    unsigned int finalColors = 0;
+                    for (unsigned int j = 0; j < effectFrameBuffer->GetNumberOfAttachments(); ++j){
+                        string colorid = "finalColor" + Utils::Convert::ToString<unsigned int>(j);
+                        if (effect->GetUniformID(colorid) >= 0){
+                            finalColors = j + 1;
+                            effect->SetTexture(colorid, sceneFrameBuffer->GetTexAttachment(j));
                         }
-                        
-                        string si = Utils::Convert::ToString<unsigned int>(i);
-
-                        if (effect->GetUniformID("fb" + si + "depth") >= 0 && depthTex != NULL)
-                            effect->SetTexture("fb" + si + "depth", depthTex);
-                        
-                        for (unsigned int j = 0; j < fbo->GetNumberOfAttachments(); ++j){
-                            string colorid = "fb" + si + "color" + Utils::Convert::ToString<unsigned int>(j);
-                            if (effect->GetUniformID(colorid) >= 0)
-                                effect->SetTexture(colorid, fbo->GetTexAttachment(j));
-                        }
+                    }
+                    //finalTexs.clear();
+                    for (unsigned int i = 0; i < finalColors; ++i){
+                        finalTexs.push_back(ITexture2DPtr(effectFrameBuffer->GetTexAttachment(i)->Clone()));
                     }
                 
                     if (effect->GetUniformID("time") >= 0){

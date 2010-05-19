@@ -37,8 +37,8 @@ namespace OpenEngine {
 
             // FBO attributes
             Vector<2, int> dimensions;
-            Resources::FrameBuffer* fbo;
-            Resources::FrameBuffer* effectFb;
+            Resources::FrameBuffer* sceneFrameBuffer;
+            Resources::FrameBuffer* effectFrameBuffer;
             vector<ITexture2DPtr> finalTexs;
 
             unsigned int time;
@@ -47,8 +47,6 @@ namespace OpenEngine {
             // Public variables
             bool enabled;
             bool offscreenRendering;
-            
-            bool merge;
 
         public:
             PostProcessNode();
@@ -58,12 +56,11 @@ namespace OpenEngine {
                             bool useDepth = true);
             /**
              * Post process node constructor.
-             *
-             * Clones the framebuffer options secified in prototype
-             * and uses them in all the framebuffers.
              */
             PostProcessNode(Resources::IShaderResourcePtr effect, 
-                            Resources::FrameBuffer* prototype);
+                            Resources::FrameBuffer* sceneFrameBuffer,
+                            Resources::FrameBuffer* effectFrameBuffer = NULL);
+            
 
             ~PostProcessNode();
 
@@ -82,11 +79,37 @@ namespace OpenEngine {
              */
             virtual void PreEffect(Renderers::IRenderer& renderer, Math::Matrix<4,4,float> modelview);
 
-            inline Resources::FrameBuffer* GetFrameBuffer() const { return fbo; }
-            inline Resources::FrameBuffer* GetEffectFrameBuffer() const { return effectFb; }
+            /**
+             * Gets the scene frame buffer, which all subnodes will be rendered to.
+             */
+            inline Resources::FrameBuffer* GetSceneFrameBuffer() const { return sceneFrameBuffer; }
+
+            /**
+             * Returns the effect framebuffer. This framebuffer
+             * contains the textures after the effect has been
+             * applied.
+             */
+            inline Resources::FrameBuffer* GetEffectFrameBuffer() const { return effectFrameBuffer; }
+
+            /**
+             * Returns the width and height of the images produced by
+             * the post process node.
+             *
+             * @return A vector containing [width, height].
+             */
             inline Math::Vector<2, int> GetDimension() const { return dimensions; }
-            inline Resources::ITexture2DPtr GetTexture(unsigned int buffer) { return fbo->GetTexAttachment(buffer); }
+
+            /**
+             * Returns the shader that creates teh effect
+             *
+             * @return The shader holding the effect.
+             */
             inline Resources::IShaderResourcePtr GetEffect() { return effect; }
+
+            /**
+             * Returns a list of textures containing the last scene
+             * rendered with the postprocess effect.
+             */
             inline vector<ITexture2DPtr> GetFinalTexs() const { return finalTexs; }
         };
 
